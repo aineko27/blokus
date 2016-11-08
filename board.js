@@ -1,5 +1,5 @@
 var Board = function(){
-	this.originPos = new Point(200, 20)
+	this.originPos = new Point(600, 80)
 	this.centerPos = new Point()
 	this.centerPos.x = this.originPos.x + gridLen* sideNum* 1/2
 	this.centerPos.y = this.originPos.y + gridLen* sideNum* Math.sqrt(3)/2
@@ -7,7 +7,7 @@ var Board = function(){
 	this.condition = "offMouse"
 	this.apex = new Array(6)
 	for(var i=0; i<this.apex.length; i++){
-		this.apex[i] = new Point()
+		this.apex[i] = {}
 		this.apex[i].pos = this.centerPos.add(angle(i/3*PI).mul(gridLen*sideNum))
 	}
 	this.grid = new Array(sideNum*sideNum*8)
@@ -23,21 +23,23 @@ var Board = function(){
 		this.grid[i].pos = new Point()
 		var px = this.originPos.x + (this.grid[i].xNum - this.grid[i].yNum)*gridLen/2
 		var py = this.originPos.y +this.grid[i].yNum* sqrt(3)* gridLen/2
-		if(this.grid[i].xNum%2==0){
-			this.grid[i].apex1 = new Point(px, py)
-			this.grid[i].apex2 = new Point(px- gridLen/2, py+ sqrt(3)* gridLen/2)
-			this.grid[i].apex3 = new Point(px+ gridLen/2, py+ sqrt(3)* gridLen/2)
+		this.grid[i].apex = new Array(3)
+		this.grid[i].apexRel = new Array(3)
+		if(mod(this.grid[i].xNum,2)==0){
+			this.grid[i].apex[0] = new Point(px, py)
+			this.grid[i].apex[1] = new Point(px- gridLen/2, py+ sqrt(3)* gridLen/2)
+			this.grid[i].apex[2] = new Point(px+ gridLen/2, py+ sqrt(3)* gridLen/2)
 		}
 		else{
-			this.grid[i].apex1 = new Point(px, py + sqrt(3)*gridLen/2)
-			this.grid[i].apex2 = new Point(px+ gridLen/2, py)
-			this.grid[i].apex3 = new Point(px- gridLen/2, py)
+			this.grid[i].apex[0] = new Point(px, py + sqrt(3)*gridLen/2)
+			this.grid[i].apex[1] = new Point(px+ gridLen/2, py)
+			this.grid[i].apex[2] = new Point(px- gridLen/2, py)
 		}
 		this.grid[i].pos.x = px
-		this.grid[i].pos.y = (this.grid[i].apex1.y + this.grid[i].apex2.y + this.grid[i].apex3.y)/ 3 
-		this.grid[i].apex1Rel = this.grid[i].apex1.sub(this.grid[i].pos)
-		this.grid[i].apex2Rel = this.grid[i].apex2.sub(this.grid[i].pos)
-		this.grid[i].apex3Rel = this.grid[i].apex3.sub(this.grid[i].pos)
+		this.grid[i].pos.y = (this.grid[i].apex[0].y + this.grid[i].apex[1].y + this.grid[i].apex[2].y)/ 3 
+		this.grid[i].apexRel[0] = this.grid[i].apex[0].sub(this.grid[i].pos)
+		this.grid[i].apexRel[1] = this.grid[i].apex[1].sub(this.grid[i].pos)
+		this.grid[i].apexRel[2] = this.grid[i].apex[2].sub(this.grid[i].pos)
 		
 		if(this.grid[i].xNum- this.grid[i].yNum*2 > sideNum*2 || 
 		   this.grid[i].xNum- (this.grid[i].yNum-sideNum)*2 < 1){
@@ -71,9 +73,9 @@ Board.prototype.draw = function(){
 		if(this.grid[i].isAlive==false) continue
 		s = 0.85
 		ctx.beginPath()
-		ctx.moveTo(this.grid[i].pos.x+ this.grid[i].apex1Rel.x*s, this.grid[i].pos.y+ this.grid[i].apex1Rel.y*s)
-		ctx.lineTo(this.grid[i].pos.x+ this.grid[i].apex2Rel.x*s, this.grid[i].pos.y+ this.grid[i].apex2Rel.y*s)
-		ctx.lineTo(this.grid[i].pos.x+ this.grid[i].apex3Rel.x*s, this.grid[i].pos.y+ this.grid[i].apex3Rel.y*s)
+		ctx.moveTo(this.grid[i].pos.x+ this.grid[i].apexRel[0].x*s, this.grid[i].pos.y+ this.grid[i].apexRel[0].y*s)
+		ctx.lineTo(this.grid[i].pos.x+ this.grid[i].apexRel[1].x*s, this.grid[i].pos.y+ this.grid[i].apexRel[1].y*s)
+		ctx.lineTo(this.grid[i].pos.x+ this.grid[i].apexRel[2].x*s, this.grid[i].pos.y+ this.grid[i].apexRel[2].y*s)
 		ctx.closePath()
 		if(this.activeGrid==i && this.grid[i].condition=="canPut"){
 			ctx.fillStyle = color[activePlayer]
@@ -110,9 +112,9 @@ Board.prototype.checkActive = function(){
 	}
 	if(checkCount==this.apex.length){
 		for(var i=0; i<this.grid.length; i++){
-			if(checkSide(mouse, this.grid[i].apex1, this.grid[i].apex2)=="left" &&
-			   checkSide(mouse, this.grid[i].apex2, this.grid[i].apex3)=="left" &&
-			   checkSide(mouse, this.grid[i].apex3, this.grid[i].apex1)=="left"){
+			if(checkSide(mouse, this.grid[i].apex[0], this.grid[i].apex[1])=="left" &&
+			   checkSide(mouse, this.grid[i].apex[1], this.grid[i].apex[2])=="left" &&
+			   checkSide(mouse, this.grid[i].apex[2], this.grid[i].apex[0])=="left"){
 				this.activeGrid = i
 				test[0] = i
 				if(leftDown1==true && leftDown2==false){
@@ -127,7 +129,7 @@ Board.prototype.checkActive = function(){
 	}
 }
 
-Board.prototype.checkCanPut = function(piece, putFlag){
+Board.prototype.checkCanPut = function(piece, pieceBoard, putFlag){
 	var pieceActiveGrid = piece.grid[clickedGrid[1]]
 	var boardActiveGrid = this.grid[this.activeGrid]
 	if(piece.color!=activePlayer){
@@ -137,7 +139,7 @@ Board.prototype.checkCanPut = function(piece, putFlag){
 		}
 		return
 	}
-	if(boardActiveGrid.point.x%2!=pieceActiveGrid.point.x%2){
+	if(mod(boardActiveGrid.point.x,2)!=mod(pieceActiveGrid.point.x,2)){
 		if(putFlag==true){
 			printMassage = "PIECE'S DIRECTION IS NOT CORRECT"
 			printFrame = counter
@@ -147,7 +149,7 @@ Board.prototype.checkCanPut = function(piece, putFlag){
 	var canPut = false
 	for(var i=0; i<piece.grid.length; i++){
 		var checkPoint = boardActiveGrid.point.add(piece.grid[i].point.sub(pieceActiveGrid.point))
-		if(this.checkPointExist(checkPoint)==false) return
+		if(checkPointExist(checkPoint, this)==false) return
 		var checkGrid = this.grid[axisToNum(checkPoint)]
 		if(checkGrid.color!="gray"){
 			if(putFlag==true){
@@ -158,10 +160,10 @@ Board.prototype.checkCanPut = function(piece, putFlag){
 		}
 		
 		if(checkGrid.isStart==true && moves<playerNum) canPut = true
-		var side = checkGrid.point.x%2
+		var side = mod(checkGrid.point.x,2)
 		
 		for(var j=0; j<nextPoint[0].length; j++){
-			if(this.checkPointExist(checkGrid.point.add(nextPoint[side][j]))==false) continue
+			if(checkPointExist(checkGrid.point.add(nextPoint[side][j]), this)==false) continue
 			var nextGrid = this.grid[axisToNum(checkGrid.point.add(nextPoint[side][j]))]
 			if(nextGrid.color==piece.color){
 				if(putFlag==true){
@@ -172,13 +174,13 @@ Board.prototype.checkCanPut = function(piece, putFlag){
 			}
 		}
 		for(var j=0; j<next2Point[0].length; j++){
-			if(this.checkPointExist(checkGrid.point.add(next2Point[side][j]))==false) continue
+			if(checkPointExist(checkGrid.point.add(next2Point[side][j]), this)==false) continue
 			var nextGrid = this.grid[axisToNum(checkGrid.point.add(next2Point[side][j]))]
 			if(nextGrid.color==piece.color) canPut = true
 		}
 	}
 	if(canPut==true){
-		this.changeColor(piece, putFlag)
+		this.changeColor(piece, pieceBoard, putFlag)
 	}
 	else{
 		if(moves<playerNum && putFlag){
@@ -192,15 +194,15 @@ Board.prototype.checkCanPut = function(piece, putFlag){
 	}
 }
 
-Board.prototype.checkPointExist = function(p){
-	var grid = this.grid[axisToNum(p)]
-	console.log(grid)
-	if(grid==undefined) return false
-	else if(grid.isAlive==false) return false
-	else return true
-}
+// Board.prototype.checkPointExist = function(p){
+	// var grid = this.grid[axisToNum(p)]
+	// console.log(grid)
+	// if(grid==undefined) return false
+	// else if(grid.isAlive==false) return false
+	// else return true
+// }
 
-Board.prototype.changeColor = function(piece, putFlag){
+Board.prototype.changeColor = function(piece, pieceBoard, putFlag){
 	var pieceActiveGrid = piece.grid[clickedGrid[1]]
 	var boardActiveGrid = this.grid[this.activeGrid]
 	if(putFlag==true){
@@ -208,7 +210,9 @@ Board.prototype.changeColor = function(piece, putFlag){
 			var checkPoint = boardActiveGrid.point.add(piece.grid[i].point.sub(pieceActiveGrid.point))
 			var checkGrid = this.grid[axisToNum(checkPoint)]
 			checkGrid.color = piece.color
+			pieceBoard.grid[axisToNum(piece.grid[i].point)].condition = "offPiece"
 		}
+		piece.isAlive = false
 		moves++
 		activePlayer = playerColor[moves%playerNum]
 		printFrame = NaN

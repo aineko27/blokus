@@ -206,6 +206,14 @@ var axisToNum = function(p){
 	return p.x + p.y*4*sideNum
 }
 
+checkPointExist = function(p, board){
+	// console.log(board, board.grid, p)
+	var grid = board.grid[axisToNum(p)]
+	if(grid==undefined) return false
+	else if(grid.isAlive==false) return false
+	else return true
+}
+
 
 
 
