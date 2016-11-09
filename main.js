@@ -36,8 +36,8 @@ var clickedGrid = new Array(0,0,false);
 window.onload = function(){
 	//スクリーンの初期化
 	screenCanvas = document.getElementById("screen");
-	screenCanvas.width = window.innerWidth;
-	screenCanvas.height = window.innerHeight-80;
+	screenCanvas.width = 1800;
+	screenCanvas.height = 900;
 	ctx = screenCanvas.getContext("2d");
 	//イベントの登録
 	window.addEventListener("mousemove", mouseMove, true);
